@@ -3,6 +3,7 @@
     "name": "my-rent-mobile-app",
     "slug": "my-rent-mobile-app",
     "version": "1.0.0",
+    "owner": "jpatelier",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -18,9 +19,13 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.myrent.app",
+      "buildNumber": "4.0.0"
     },
     "android": {
+      "package": "hr.myrent.mrz",
+      "versionCode": 17,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
@@ -28,6 +33,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a57dfebd-81b3-4a01-ac27-6aef5dc45d8e"
+      }
     }
   }
 }
