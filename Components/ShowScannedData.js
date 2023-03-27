@@ -1,11 +1,5 @@
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  TextInput,
-} from "react-native";
-import React, { useContext } from "react";
+import { View, Text, Pressable, StyleSheet, TextInput } from "react-native";
+import React, { useContext, useEffect, useState } from "react";
 //COLORS
 import { ColorPrimaryGradientOne } from "../Static/static";
 //AXIOS
@@ -26,6 +20,11 @@ const ShowScannedData = ({
   onCancelButtonPress,
 }) => {
   const { userData, setUserData } = useContext(UserContext);
+  const [userDataCopy, setUserDataCopy] = useState({});
+
+  useEffect(() => {
+    setUserDataCopy(userData);
+  }, []);
 
   const {
     rentId,
@@ -37,68 +36,87 @@ const ShowScannedData = ({
     documentId,
     citizenship,
     birthDate,
+    residenceCity,
     exprirationDate,
     originalData,
     workerId,
-  } = userData;
+  } = userDataCopy;
+
+  useEffect(() => {}, []);
+
+  const [isFormValid, setIsFormValid] = useState(true);
 
   const onSaveFormButtonClick = () => {
+    console.log(userDataCopy);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    axios
-      .post(`${REGULA_API.toString()}`, {
-        rent_id: rentId,
-        name_first: name,
-        name_last: surname,
-        document_type: documentType,
-        document_number: documentId,
-        gender: gender,
-        residence_country: country,
-        residence_adress: "",
-        residence_city: "",
-        birth_country: "",
-        citizenship: country,
-        birth_city: "",
-        arrival_organisation: "",
-        offered_service_type: "",
-        birth_date: birthDate,
-        tt_payment_category: "",
-        original_data: JSON.stringify(originalData),
-        worker_id: workerId,
-      })
-      .then((res) => {
-        setShowScanInfo(false);
-        openGuestList();
-      });
+    if (residenceCity === "" && citizenship === "Croatia") {
+      console.log("nije");
+      setIsFormValid(false);
+    } else {
+      console.log("proslo");
+      axios
+        .post(`${REGULA_API.toString()}`, {
+          rent_id: rentId,
+          name_first: name,
+          name_last: surname,
+          document_type: documentType,
+          document_number: documentId,
+          gender: gender,
+          residence_country: country,
+          residence_adress: "",
+          residence_city: residenceCity,
+          birth_country: "",
+          citizenship: country,
+          birth_city: "",
+          arrival_organisation: "",
+          offered_service_type: "",
+          birth_date: birthDate,
+          tt_payment_category: "",
+          original_data: JSON.stringify(originalData),
+          worker_id: workerId,
+        })
+        .then((res) => {
+          setShowScanInfo(false);
+          setUserDataCopy({});
+          openGuestList();
+        });
+    }
   };
 
   const onChangeName = (value) => {
-    setUserData((existingValues) => ({ ...existingValues, name: value }));
+    setUserDataCopy((existingValues) => ({ ...existingValues, name: value }));
   };
   const onChangeSurname = (value) => {
-    setUserData((existingValues) => ({ ...existingValues, surname: value }));
+    setUserDataCopy((existingValues) => ({
+      ...existingValues,
+      surname: value,
+    }));
   };
   const onChangeGender = (value) => {
-    setUserData((existingValues) => ({ ...existingValues, gender: value }));
+    setUserDataCopy((existingValues) => ({ ...existingValues, gender: value }));
   };
   const onChangeCountry = (value) => {
-    setUserData((existingValues) => ({ ...existingValues, country: value }));
+    setUserDataCopy((existingValues) => ({
+      ...existingValues,
+      country: value,
+    }));
   };
   const onChangeDocumentId = (value) => {
-    setUserData((existingValues) => ({ ...existingValues, documentId: value }));
+    setUserDataCopy((existingValues) => ({
+      ...existingValues,
+      documentId: value,
+    }));
   };
   const onChangeCitizenship = (value) => {
-    setUserData((existingValues) => ({
+    setUserDataCopy((existingValues) => ({
       ...existingValues,
       citizenship: value,
     }));
   };
-  const onChangeBirthDate = (value) => {
-    setUserData((existingValues) => ({ ...existingValues, birthDate: value }));
-  };
-  const onChangeExpirationDate = (value) => {
-    setUserData((existingValues) => ({
+  const onResidenceCityChange = (value) => {
+    setUserDataCopy((existingValues) => ({
       ...existingValues,
-      exprirationDate: value,
+      residenceCity: value,
     }));
   };
 
@@ -154,6 +172,21 @@ const ShowScannedData = ({
           style={styles.textInput}
         />
       </View>
+
+      {citizenship?.toLowerCase() === "croatia" ? (
+        <View style={styles.inputAndLabelContainer}>
+          <Text style={{ width: 110 }}>City: </Text>
+          <TextInput
+            value={residenceCity}
+            onChangeText={onResidenceCityChange}
+            placeholder="City of residence"
+            style={styles.textInput}
+          />
+        </View>
+      ) : (
+        ""
+      )}
+
       <View style={styles.inputAndLabelContainer}>
         <Text style={{ width: 110 }}>Citizenship: </Text>
         <TextInput
@@ -163,10 +196,22 @@ const ShowScannedData = ({
           style={styles.textInput}
         />
       </View>
+      {isFormValid ? null : (
+        <Text
+          style={{
+            marginVertical: 12,
+            textAlign: "center",
+            color: "black",
+            fontSize: 16,
+          }}
+        >
+          Molimo unesite grad!
+        </Text>
+      )}
       <Text style={{ marginVertical: 12, textAlign: "center", color: "red" }}>
         Molimo detaljno provjerite skenirane podatke, jer ovisno o uvijetima
         skeniranja, svijetlosti, nagibu ili modelu vašeg mobilnog uređaja, može
-        se desitit da neki podatak nije ispravno prepoznat
+        se dogoditi da neki podatak nije ispravno prepoznat
       </Text>
       <View style={styles.buttonsContainer}>
         <Pressable

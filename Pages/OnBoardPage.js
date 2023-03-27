@@ -12,10 +12,14 @@ import {
   Dimensions,
   Platform,
   TouchableWithoutFeedback,
+  Switch,
 } from "react-native";
 import React, { useState } from "react";
 //COMPONENTS
 import Modal from "../Components/Modal";
+
+//firebise cloud messaging
+import messaging from "@react-native-firebase/messaging";
 
 //NAVIGATION
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
@@ -51,6 +55,9 @@ const OnBoardPage = () => {
 
   //DECLARATIONS
   const [isExitModalShown, setIsExitModalShown] = useState(false);
+  const [isPushEnabled, setIsPushEnabled] = useState(false);
+
+  const toggleSwitch = () => setIsPushEnabled((previousState) => !previousState);
 
   //NAV DECLARATION
   const navigation = useNavigation();
@@ -102,7 +109,7 @@ const OnBoardPage = () => {
               <Text style={styles.header}>Welcome to myRent</Text>
               <Text style={styles.subHeader}>Channel Manager & PMS system</Text>
               <View style={styles.cardContainer}>
-                <Text style={styles.cardTitle}>Sign in</Text>
+                <Text style={styles.cardTitle}>Let's go</Text>
                 <Pressable
                   style={({ pressed }) => [
                     { opacity: pressed ? 0.8 : 1 },
@@ -111,27 +118,8 @@ const OnBoardPage = () => {
                   title="Submit"
                   onPress={loginButtonPress}
                 >
-                  <Text style={styles.loginText}>LET'S GO</Text>
+                  <Text style={styles.loginText}>LOG IN</Text>
                 </Pressable>
-                <View style={styles.postFormContainer}>
-                  <Text style={styles.signUpText}>
-                    Don't have an account yet?
-                  </Text>
-                  <Text style={styles.signUpText}>
-                    Sign up for free with no risk or obligation
-                  </Text>
-                  <Pressable style={styles.SignUpButtonContainer}>
-                    <Text
-                      onPress={() => {
-                        setIsExitModalShown(false);
-                        Linking.openURL("https://reg.my-rents.com/");
-                      }}
-                      style={styles.SignUpButton}
-                    >
-                      Sign up for free
-                    </Text>
-                  </Pressable>
-                </View>
               </View>
               <View
                 style={[
@@ -161,18 +149,19 @@ const OnBoardPage = () => {
                   Thank you for working with myRent Powered by: MyRent Channel
                   Manager
                 </Text>
-                <Pressable style={{ marginTop: 8 }}>
-                  <Text
-                    onPress={() => {
-                      setIsExitModalShown(false);
-                      Linking.openURL("https://reg.my-rents.com/");
-                    }}
-                    style={styles.bottomLink}
-                  >
-                    https://my-rents.com
-                  </Text>
-                </Pressable>
               </View>
+              {/* <View style={styles.pushNotificationsContainer}>
+                <Text style={styles.pushNotificationsText}>
+                  Allow push notifications?
+                </Text>
+                <Switch
+                  trackColor={{ false: "#767577", true: "#81b0ff" }}
+                  thumbColor={isPushEnabled ? "#f5dd4b" : "#f4f3f4"}
+                  ios_backgroundColor="#3e3e3e"
+                  onValueChange={toggleSwitch}
+                  value={isPushEnabled}
+                />
+              </View> */}
               {isExitModalShown ? (
                 <Modal
                   title="Exit app?"
@@ -227,6 +216,18 @@ const styles = StyleSheet.create({
     height: 75,
     aspectRatio: 1,
     display: "flex",
+    alignItems: "center",
+  },
+  pushNotificationsText: {
+    fontFamily: "Poppins_700Bold",
+    marginRight: 16,
+  },
+  pushNotificationsContainer: {
+    marginTop: 64,
+    display: "flex",
+    width: "100%",
+    justifyContent: "flex-start",
+    flexDirection: "row",
     alignItems: "center",
   },
   header: {

@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "105835480912",
+    "project_id": "my-rent-mobile-app",
+    "storage_bucket": "my-rent-mobile-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:105835480912:android:9f9967b361ddfb8fa30e55",
+        "android_client_info": {
+          "package_name": "hr.myrent.mrz"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "105835480912-uqcqq1fldkf4m2erh2gk4lirabb688vk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZefEleX08sZLAfNtGNQ7rv6sfNd4W4nY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "105835480912-uqcqq1fldkf4m2erh2gk4lirabb688vk.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "105835480912-t5do4s00gn8ql2482pvl6h0m33d0hgg7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.myrent.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

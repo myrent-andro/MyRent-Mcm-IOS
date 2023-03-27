@@ -12,7 +12,7 @@ export function UserProvider({ children }) {
     gender: "",
     country: "",
     address: "",
-    city: "",
+    residenceCity: "",
     birthCity: "",
     birthCountry: "",
     citizenship: "",

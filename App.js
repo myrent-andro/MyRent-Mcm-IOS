@@ -1,20 +1,15 @@
-import React, { useState, useEffect } from "react";
-import { Alert } from "react-native";
-//NAVIGATION IMPORTS
-import { NavigationContainer } from "@react-navigation/native";
-import { createStackNavigator } from "@react-navigation/stack";
+import React, { useEffect } from "react";
 //EXPO STATUS BAR
-import { StatusBar } from 'expo-status-bar';
-//PAGES
-import HomePage from "./Pages/HomePage";
-import LoginPage from "./Pages/LoginPage";
-import OnBoardPage from "./Pages/OnBoardPage";
-//EXPO SECURE STORE
-import * as SecureStore from "expo-secure-store";
-//SECURITY
-import * as Device from "expo-device";
+import { StatusBar } from "expo-status-bar";
+
 //CONTEXT
 import { UserProvider } from "./context/ScannedContext";
+import { LoggedProvider } from "./context/LoggedContext";
+//navigators
+import MainNavigator from "./navigator/MainNavigator";
+
+//firebise cloud messaging
+import messaging from "@react-native-firebase/messaging";
 
 //FONT
 import {
@@ -25,8 +20,7 @@ import {
   Poppins_600SemiBold,
   Poppins_700Bold,
 } from "@expo-google-fonts/poppins";
-
-const Stack = createStackNavigator();
+import { Alert } from "react-native";
 
 export default function App() {
   //LOAD FONTS
@@ -37,78 +31,70 @@ export default function App() {
     Poppins_600SemiBold,
     Poppins_700Bold,
   });
-  const [initialRoute, setInitialRoute] = useState("OnBoardPage");
-  const [asyncOver, setAsyncOver] = useState(false);
 
+  async function requestUserPermission() {
+    const authStatus = await messaging().requestPermission();
+    const enabled =
+      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
-  //CHECK IF GUID && WORKER_ID EXISTS (IF GUID EXISTS NAVIGATE TO HOMEPAGE ELSE STAY ON ONBOARDPAGE)
-  useEffect(() => {
-    async function checkGuidAndSetNavigation() {
-      try {
-        const guid = await SecureStore.getItemAsync("guid");
-        const workerId = await SecureStore.getItemAsync("worker_id");
-        if (guid && workerId) {
-          setInitialRoute("HomePage");
-          setAsyncOver(true);
-        } else {
-          setInitialRoute("OnBoardPage");
-          setAsyncOver(true);
-        }
-      } catch (error) {
-        setInitialRoute("OnBoardPage");
-        setAsyncOver(true);
-      }
+    if (enabled) {
+      // console.log("Authorization status:", authStatus);
     }
-    checkGuidAndSetNavigation();
-  }, []);
+  }
 
-  //CHECKING FOR ROOTED/JAILBROKEN DEVICES
+  //Initialize push notifications
   useEffect(() => {
-    async function checkSecurity() {
-      try {
-        const isDeviceRooted = await Device.isRootedExperimentalAsync();
-        if (isDeviceRooted === true) {
-          Alert.alert("HEY", "Your device is rooted/jailbroken ", [
-            { text: "YES", onPress: () => BackHandler.exitApp() },
-          ]);
-        }
-      } catch (err) {
-        Alert.alert(
-          "ERROR",
-          "Error detecting if device is rooted/jailbroken device i ",
-          [{ text: "YES", onPress: () => navigation.navigate("OnBoardPage") }]
-        );
-      }
+    if (requestUserPermission()) {
+      // return fcm token for the device
+      messaging()
+        .getToken()
+        .then(async (token) => {
+          // console.log(token);
+        });
+    } else {
+      console.log("Failed token status", authStatus);
     }
-    checkSecurity();
+
+    //check whether an initail app is running
+    messaging()
+      .getInitialNotification()
+      .then(async (remoteMessage) => {
+        if (remoteMessage) {
+          // console.log(
+          //   "Hotification caused app to open from quit state: ",
+          //   remoteMessage.notification
+          // );
+        }
+      });
+
+    //asume a message-notification contains a type property in data payload of the screen to open
+    messaging().onNotificationOpenedApp(async (remoteMessage) => {
+      // console.log(
+      //   "Notification caused app to open from background state",
+      //   remoteMessage.notification
+      // );
+    });
+
+    //background handler
+    messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+      // console.log("Message handled in the background!", remoteMessage);
+    });
+
+    const unsubscribe = messaging().onMessage(async (remoteMessage) => {
+      console.log(remoteMessage.notification.body);
+      Alert.alert(remoteMessage.notification.title, remoteMessage.notification.body);
+    });
+
+    return unsubscribe;
   }, []);
 
   return (
-    <>
-    <UserProvider>
-    <StatusBar style="light" />
-      {asyncOver && (
-        <NavigationContainer>
-          <Stack.Navigator initialRouteName={initialRoute.toString()}>
-            <Stack.Screen
-              options={{ headerShown: false }}
-              name="OnBoardPage"
-              component={OnBoardPage}
-            />
-            <Stack.Screen
-              options={{ headerShown: false }}
-              name="LoginPage"
-              component={LoginPage}
-            />
-            <Stack.Screen
-              options={{ headerShown: false, gestureEnabled: false }}
-              name="HomePage"
-              component={HomePage}
-            />
-          </Stack.Navigator>
-        </NavigationContainer>
-      )}
-    </UserProvider>
-    </>
+    <LoggedProvider>
+      <UserProvider>
+        <StatusBar style="light" />
+        <MainNavigator />
+      </UserProvider>
+    </LoggedProvider>
   );
 }

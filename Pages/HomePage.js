@@ -12,14 +12,21 @@ import {
   Dimensions,
 } from "react-native";
 
+//firebise cloud messaging
+import messaging from "@react-native-firebase/messaging";
+
+//USE IF FOCUSED UNMOUNT SCREEN WHEN NOT SEEN
+import { useIsFocused } from "@react-navigation/native";
+
 //EXPO HAPTICS
 import * as Haptics from "expo-haptics";
 
 //EXPO STATUS BAR
-import { StatusBar } from 'expo-status-bar';
+import { StatusBar } from "expo-status-bar";
 
 //CONTEXT
 import { UserContext } from "../context/ScannedContext";
+import { LoggedContext } from "../context/LoggedContext";
 
 //KeyboardAwareScrollView
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -37,11 +44,7 @@ import DocumentReader, {
 import * as RNFS from "react-native-fs";
 
 //STATIC
-import {
-  ColorPrimary,
-  ColorPrimaryGradientOne,
-  ColorPrimaryGradientTwo,
-} from "../Static/static";
+import { ColorPrimary, ColorPrimaryGradientOne } from "../Static/static";
 
 //REACT NATIVE WEB VIEW
 import { WebView } from "react-native-webview";
@@ -65,8 +68,6 @@ import {
 
 const eventManager = new NativeEventEmitter(RNRegulaDocumentReader);
 
-const windowHeight = Dimensions.get("window").height;
-
 //LICENSE LOCATION
 var licPath =
   Platform.OS === "ios"
@@ -85,11 +86,17 @@ const HomePage = () => {
     Poppins_700Bold,
   });
 
+  //IS FOCUSED HOOK
+  const isFocused = useIsFocused();
+
+  //USER CONTEXT
   const { userData, setUserData } = useContext(UserContext);
+  const { setIsUserLoggedIn, isUserLoggedIn } = useContext(LoggedContext);
+
+  const [isScanningAllowed, setIsScanningAllowed] = useState(true);
 
   //NAVIGATION
   const navigation = useNavigation();
-
   //DECLARATIONS
   const [urlState, setUrlState] = useState("");
   const [backButtonEnabled, setBackButtonEnabled] = useState(false);
@@ -101,7 +108,34 @@ const HomePage = () => {
 
   const WEBVIEW = useRef();
 
-  useEffect(() => {});
+  useEffect(() => {
+    const scanning_avaliable = async () => {
+      const worker_id = await SecureStore.getItemAsync("worker_id");
+      const worker_id_quoteless = worker_id.replace(`"`, ``).replace(`"`, ``);
+      //get user guid from local storage
+      const user_guid = await SecureStore.getItemAsync("user_guid");
+
+      await fetch(
+        `https://api.my-rent.net/mcm/check_for_scaning?worker_id=${worker_id_quoteless}`,
+        {
+          headers: {
+            user_guid: user_guid.replace(`"`, ``).replace(`"`, ``),
+          },
+        }
+      )
+        .then((response) => response.text())
+        .then((data) => {
+          if (data[0].mobile_enable === "Y") {
+            setIsScanningAllowed(true);
+          } else {
+            setIsScanningAllowed(false);
+          }
+        })
+        .catch((err) => console.log(err));
+    };
+
+    scanning_avaliable();
+  }, []);
 
   //INITIALIZE REGULA
   useEffect(() => {
@@ -112,7 +146,6 @@ const HomePage = () => {
     DocumentReader.prepareDatabase(
       "Full",
       (respond) => {
-        console.log(respond);
         readFile(licPath, "base64")
           .then((res) => {
             DocumentReader.initializeReader(
@@ -120,7 +153,6 @@ const HomePage = () => {
                 license: res,
               },
               (respond) => {
-                console.log(respond);
                 setIsDatabseConnected(true);
               },
               (error) => console.log(error)
@@ -247,15 +279,15 @@ const HomePage = () => {
       try {
         const guid = await SecureStore.getItemAsync("guid");
         const worker_id = await SecureStore.getItemAsync("worker_id");
+        //GENERATING URL
+        setUrlState(
+          `https://m.my-rent.net/?id=${guid.replace(`"`, ``).replace(`"`, ``)}`
+        );
         //ADDING WORKER_ID TO USER CONTEXT
         setUserData((existingValues) => ({
           ...existingValues,
-          workerId: worker_id.replace('"', "").replace('"', ""),
+          workerId: worker_id.replace(`"`, ``).replace(`"`, ``),
         }));
-        //GENERATING URL
-        setUrlState(
-          `https://m.my-rent.net/?id=${guid.replace('"', "").replace('"', "")}`
-        );
       } catch (error) {
         console.log("Getting guid and worker id from expo store error");
       }
@@ -263,41 +295,75 @@ const HomePage = () => {
     getGuidFromExpoSecureStore();
   }, []);
 
+  //logout
+  const setUserLoggedOut = async (worker_id, token) => {
+    //get user guid from local storage
+    const user_guid = await SecureStore.getItemAsync("user_guid");
+    const is_logged_in = "N";
+    fetch(
+      `https://api.my-rent.net/mcm/update_login_state?worker_id=${worker_id}&key=${token}&is_logged_in=${is_logged_in}`,
+      {
+        headers: {
+          user_guid: user_guid.replace(`"`, ``).replace(`"`, ``),
+        },
+      }
+    ).then(() => {
+      deleteDataFromStorage();
+    });
+  };
+
+  //delete data from storage helper function to delete data
+  const deleteDataFromStorage = async () => {
+    SecureStore.deleteItemAsync("user_guid")
+      .then(() => {
+        SecureStore.deleteItemAsync("guid");
+      })
+      .then(async () => {
+        SecureStore.deleteItemAsync("worker_id");
+        await new Promise((res) => setTimeout(res, 100));
+        setIsUserLoggedIn(false);
+      });
+  };
+
   //DELETING GUID ON LOGOUT
-  function deleteGuid() {
-    SecureStore.deleteItemAsync("guid")
-      .then(() => navigation.navigate("OnBoardPage"))
-      .catch((err) => console.log(err));
-    SecureStore.deleteItemAsync("worker_id")
-      .then(() => navigation.navigate("OnBoardPage"))
-      .catch((err) => console.log(err));
+  async function deleteGuid() {
+    const worker_id = await SecureStore.getItemAsync("worker_id");
+    const token = await SecureStore.getItemAsync("push_token");
+    // const user_guid = await SecureStore.getItemAsync("user_guid");
+    const worker_id_quoteless = worker_id.replace(`"`, ``).replace(`"`, ``);
+    const token_quoteless = token.replace(`"`, ``).replace(`"`, ``);
+    // const user_guid_qless = user_guid.replace(`"`, `"`).replace(`"`, ``);
+
+    setUserLoggedOut(worker_id_quoteless, token_quoteless);
   }
 
   // WEBVIEW NAVIGATION STATE CHANGE LISTENER && TRACE URL FROM WEBVIEW
   function onNavigationStateChange(navState) {
     setBackButtonEnabled(navState.canGoBack);
     //TRACE URL FROM WEBVIEW
-    //IS RESERVATION CLICKE SHOW SCAN BUTTON THAT STARTS MRT SCANNER
-    if (
-      navState.url.split("?")[0]
-        ? navState.url.split("?")[0] === "https://m.my-rent.net/#edit"
-        : navState.url === "https://m.my-rent.net/#edit"
-    ) {
-      if (navState.url.split("?")[1]) {
-        const extractRentId = navState.url.split("?")[1].split("=")[1];
+    //IS RESERVATION CLICKED SHOW SCAN BUTTON THAT STARTS MRT SCANNER
+    if (isScanningAllowed) {
+      if (
+        navState.url.split("?")[0]
+          ? navState.url.split("?")[0] === "https://m.my-rent.net/#edit"
+          : navState.url === "https://m.my-rent.net/#edit"
+      ) {
+        if (navState.url.split("?")[1]) {
+          const extractRentId = navState.url.split("?")[1].split("=")[1];
+          setUserData((existingValues) => ({
+            ...existingValues,
+            rentId: extractRentId,
+          }));
+        }
+        setShowScanButton(true);
+      } else if (navState.url === "https://m.my-rent.net/#rents/guests") {
         setUserData((existingValues) => ({
           ...existingValues,
-          rentId: extractRentId,
         }));
+        setShowScanButton(true);
+      } else {
+        setShowScanButton(false);
       }
-      setShowScanButton(true);
-    } else if (navState.url === "https://m.my-rent.net/#rents/guests") {
-      setUserData((existingValues) => ({
-        ...existingValues,
-      }));
-      setShowScanButton(true);
-    } else {
-      setShowScanButton(false);
     }
     if (
       navState.url === urlState + "#" ||
@@ -305,14 +371,26 @@ const HomePage = () => {
     ) {
       deleteGuid();
     }
-    // console.log(userData);
   }
 
+  // REFRESH TO SEE ADDED USER
   function openGuestList() {
     const redirectTo =
       'window.location="/#rents/messages"; window.location = "/#rents/guests"';
     WEBVIEW.current.injectJavaScript(redirectTo);
   }
+
+  // // for testing
+  // useEffect(() => {
+  //   SecureStore.deleteItemAsync("user_guid")
+  //     .then(() => {
+  //       SecureStore.deleteItemAsync("guid");
+  //     })
+  //     .then(async () => {
+  //       SecureStore.deleteItemAsync("worker_id");
+  //       await new Promise((res) => setTimeout(res, 700));
+  //     });
+  // });
 
   //HANDLE GO BACK BUTTON
   useEffect(() => {
@@ -342,80 +420,93 @@ const HomePage = () => {
     );
   }
 
-  return (
+  return isFocused ? (
     <>
-   {Platform.OS==='ios' ? <SafeAreaView style={{flex: 0, backgroundColor:( urlState && isDatabseConnected) ? ColorPrimaryGradientOne : "white"}}/> : null}
-    <SafeAreaView
-      style={{
-        zIndex: 6,
-        flex: 1,
-        backgroundColor: "white",
-      }}
-    >
-      {urlState && isDatabseConnected ? (
-        <>
-          <View style={{ display: showScanInfo ? "none" : "flex", flex: 1 }}>
-            <WebView
-              ref={WEBVIEW}
-              onNavigationStateChange={onNavigationStateChange}
-              source={{ uri: urlState }}
-              allowsBackForwardNavigationGestures
-              //Enable Javascript support
-              javaScriptEnabled={true}
-              //For the Cache
-              domStorageEnabled={true}
-              renderLoading={IndicatorLoadingView}
-              startInLoadingState={true}
-            />
-          </View>
-          {showScanButton && (
-            <View style={styles.scanButtonContainer}>
-              <ScanButton onPress={onScanButtonPress} />
-            </View>
-          )}
-          {showScanInfo && (
-            <View style={styles.scanInfoContainer}>
-              <View style={styles.scannedDataContainer}>
-                <Text style={styles.headerText}>Scanned Data</Text>
-              </View>
-              <KeyboardAwareScrollView
-                style={{
-                  backgroundColor: "transparent",
-                  flex: 1,
-                  width: "100%",
-                }}
-              >
-                <ShowScannedData
-                  openGuestList={openGuestList}
-                  userData={userData}
-                  setUserData={setUserData}
-                  setShowScanInfo={setShowScanInfo}
-                  onScanButtonPress={onScanButtonPress}
-                  onCancelButtonPress={onCancelButtonPress}
-                />
-              </KeyboardAwareScrollView>
-            </View>
-          )}
-        </>
-      ) : (
-        <View
+      {Platform.OS === "ios" ? (
+        <SafeAreaView
           style={{
-            width: "100%",
-            height: "100%",
-            alignItems: "center",
-            justifyContent: "center",
+            flex: 0,
+            backgroundColor:
+              urlState && isDatabseConnected
+                ? ColorPrimaryGradientOne
+                : "white",
           }}
-        >
-          <StatusBar style="dark" />
-          {fontsLoaded && (
-            <Text style={styles.loadingText}>Setting up your app...</Text>
-          )}
-          <ActivityIndicator size="large" color="#292a44" />
-        </View>
-      )}
-    </SafeAreaView>
+        />
+      ) : null}
+      <SafeAreaView
+        style={{
+          zIndex: 6,
+          flex: 1,
+          backgroundColor: "white",
+        }}
+      >
+        {Platform.OS === "android" && (
+          <View
+            style={{ paddingTop: 48, backgroundColor: ColorPrimaryGradientOne }}
+          />
+        )}
+        {urlState && isDatabseConnected ? (
+          <>
+            <View style={{ display: showScanInfo ? "none" : "flex", flex: 1 }}>
+              <WebView
+                startInLoadingState={true}
+                ref={WEBVIEW}
+                onNavigationStateChange={onNavigationStateChange}
+                source={{ uri: urlState }}
+                allowsBackForwardNavigationGestures
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                renderLoading={IndicatorLoadingView}
+              />
+            </View>
+            {showScanButton && (
+              <View style={styles.scanButtonContainer}>
+                <ScanButton onPress={onScanButtonPress} />
+              </View>
+            )}
+            {showScanInfo && (
+              <View style={styles.scanInfoContainer}>
+                <View style={styles.scannedDataContainer}>
+                  <Text style={styles.headerText}>Scanned Data</Text>
+                </View>
+                <KeyboardAwareScrollView
+                  style={{
+                    backgroundColor: "transparent",
+                    flex: 1,
+                    width: "100%",
+                  }}
+                >
+                  <ShowScannedData
+                    openGuestList={openGuestList}
+                    userData={userData}
+                    setUserData={setUserData}
+                    setShowScanInfo={setShowScanInfo}
+                    onScanButtonPress={onScanButtonPress}
+                    onCancelButtonPress={onCancelButtonPress}
+                  />
+                </KeyboardAwareScrollView>
+              </View>
+            )}
+          </>
+        ) : (
+          <View
+            style={{
+              width: "100%",
+              height: "100%",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <StatusBar style="dark" />
+            {fontsLoaded && (
+              <Text style={styles.loadingText}>Setting up your app...</Text>
+            )}
+            <ActivityIndicator size="large" color="#292a44" />
+          </View>
+        )}
+      </SafeAreaView>
     </>
-  );
+  ) : null;
 };
 
 const styles = StyleSheet.create({
@@ -446,7 +537,7 @@ const styles = StyleSheet.create({
   },
   scanButtonContainer: {
     position: "absolute",
-    bottom: Platform.OS==='ios' ? 120 : 90,
+    bottom: Platform.OS === "ios" ? 120 : 90,
     right: 20,
     elevation: 4,
   },

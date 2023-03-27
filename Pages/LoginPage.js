@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,9 @@ import {
   Alert,
   Platform,
 } from "react-native";
+
+//firebise cloud messaging
+import messaging from "@react-native-firebase/messaging";
 
 //EXPO
 import Constants from "expo-constants";
@@ -36,10 +39,14 @@ import axios from "axios";
 //ENV
 import { API_LOGIN_URL } from "@env";
 
+//context
+import { LoggedContext } from "../context/LoggedContext";
+
 const LoginPage = () => {
   //DECLARATIONS
   //DECLARING NAVIGATION
   const navigation = useNavigation();
+  const { setIsUserLoggedIn } = useContext(LoggedContext);
 
   //FOR TEXT INPUTS
   const [username, setUsername] = useState("");
@@ -75,6 +82,101 @@ const LoginPage = () => {
     }
   }
 
+  async function requestUserPermission() {
+    const authStatus = await messaging().requestPermission();
+    const enabled =
+      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+  }
+
+  const getUserId = async (worker_id) => {
+    const worker_id_quteless = worker_id.replace(`"`, ``);
+    return await fetch(
+      `https://api.my-rent.net/workers/get_user_id?id=${worker_id_quteless}`
+    )
+      .then((response) => response.json())
+      .then(async (data) => {
+        console.log(data);
+        return await getUserGuid(data);
+      })
+      .catch((err) => console.log(err));
+  };
+
+  const getUserGuid = async (user_id) => {
+    console.log("USER_ID:" + user_id);
+    const user_id_qless = user_id.replace(`"`, ``).replace(`"`, ``);
+    return await fetch(`https://api.my-rent.net/users/guid/${user_id_qless}`)
+      .then((response) => response.text())
+      .then((data) => {
+        return data;
+      })
+      .catch((err) => console.log(err));
+  };
+
+  //on login set login param to true
+  const set_login_param_true = async (worker_id, token, user_guid) => {
+    const is_logged_in = "Y";
+    await fetch(
+      `https://api.my-rent.net/mcm/update_login_state?worker_id=${worker_id}&key=${token}&is_logged_in=${is_logged_in}`,
+      {
+        headers: {
+          user_guid: user_guid.replace(`"`, ``).replace(`"`, ``),
+        },
+      }
+    )
+      .then(() => console.log("SAMO UPDEJTAM STATE"))
+      .catch((err) => console.log(err));
+  };
+
+  //add new device with key to that worker if device for that worker is not registred
+  const add_new_key_to_db = async (worker_id, token, user_guid) => {
+    await fetch(
+      `https://api.my-rent.net/mcm/add_new_key_to_db?worker_id=${worker_id}&key=${token}`,
+      {
+        headers: {
+          user_guid: user_guid.replace(`"`, ``).replace(`"`, ``),
+        },
+      }
+    ).then(() => console.log("DODAN NOVI DEVICE"));
+  };
+
+  const checkIfWorkerExsist = async (worker_id, token, user_guid) => {
+    //worker id (eliminate qutes)
+    const worker_id_quteless = worker_id.replace(`"`, ``).replace(`"`, ``);
+
+    const response = await fetch(
+      `https://api.my-rent.net/mcm/check_if_device_is_new_for_specific_worker?key=${token}&worker_id=${worker_id_quteless}`,
+      {
+        headers: {
+          user_guid: user_guid.replace(`"`, ``).replace(`"`, ``),
+        },
+      }
+    )
+      .then((response) => {
+        return response.json();
+      })
+      .then(async (data) => {
+        if (data[0].is_push_id === "N") {
+          await add_new_key_to_db(worker_id_quteless, token, user_guid);
+        } else {
+          await set_login_param_true(worker_id_quteless, token, user_guid);
+        }
+      })
+      .catch((err) => console.log(err));
+  };
+
+  const canUserLogin = async (guid, worker_id, user_guid) => {
+    const push_token = await SecureStore.getItemAsync("push_token");
+    if (guid && worker_id && user_guid && push_token) {
+      setIsUserLoggedIn(true);
+    } else {
+      setUsername("");
+      setPassword("");
+      setIsCredentialsTrue(false);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Error);
+    }
+  };
+
   //ON LOGIN BUTTON CLICK
   const handleSubmit = () => {
     axios
@@ -82,12 +184,25 @@ const LoginPage = () => {
         username: username,
         password: password,
       })
-      .then((res) => {
+      .then(async (res) => {
+        console.log(res.data);
         setIsCredentialsTrue(true);
-        save("guid", res.data.guid);
-        save("worker_id", res.data.id);
+        await save("guid", res.data.guid);
+        await save("worker_id", res.data.id);
+        //get user guid provided worker id
+        const user_guid = await getUserId(res.data.id);
+        await save("user_guid", user_guid);
+
+        if (requestUserPermission()) {
+          messaging()
+            .getToken()
+            .then(async (token) => {
+              save("push_token", token);
+              await checkIfWorkerExsist(res.data.id, token, user_guid);
+            });
+        }
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Success);
-        navigation.navigate("HomePage");
+        canUserLogin(user_guid, res.data.guid, res.data.id);
       })
       .catch((err) => {
         console.log(err);
