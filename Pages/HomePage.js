@@ -102,6 +102,7 @@ const HomePage = () => {
   const [backButtonEnabled, setBackButtonEnabled] = useState(false);
   const [showScanButton, setShowScanButton] = useState(false);
   const [isDatabseConnected, setIsDatabseConnected] = useState(false);
+  const [currentUrl, setCurrentUrl] = useState("");
 
   //SHOW FULL PAGE MODAL AFTER REGULA SCAN
   const [showScanInfo, setShowScanInfo] = useState(false);
@@ -125,7 +126,8 @@ const HomePage = () => {
       )
         .then((response) => response.text())
         .then((data) => {
-          if (data[0].mobile_enable === "Y") {
+          var mobile = data.slice(19, 20);
+          if (mobile === "Y") {
             setIsScanningAllowed(true);
           } else {
             setIsScanningAllowed(false);
@@ -246,8 +248,8 @@ const HomePage = () => {
   const onCancelButtonPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowScanInfo(false);
-    const redirectTo =
-      'window.location="/#rents/messages"; window.location = "/#rents/guests"';
+    const extractRentId = currentUrl.split("?")[1].split("=")[1];
+    const redirectTo = `window.location="/#rents/messages?rent_id=${extractRentId}"; window.location = "/#rents/guests?rent_id=${extractRentId}"`;
     WEBVIEW.current.injectJavaScript(redirectTo);
   };
 
@@ -339,9 +341,18 @@ const HomePage = () => {
 
   // WEBVIEW NAVIGATION STATE CHANGE LISTENER && TRACE URL FROM WEBVIEW
   function onNavigationStateChange(navState) {
+    console.log(navState.url);
     setBackButtonEnabled(navState.canGoBack);
+    setCurrentUrl(navState.url);
     //TRACE URL FROM WEBVIEW
     //IS RESERVATION CLICKED SHOW SCAN BUTTON THAT STARTS MRT SCANNER
+    // console.log(navState.url);
+    if (navState.url.includes("?rent_id=")) {
+      var nav_url = navState.url.split("?rent_id=");
+    }
+    if (nav_url === undefined) {
+      nav_url = "0";
+    }
     if (isScanningAllowed) {
       if (
         navState.url.split("?")[0]
@@ -356,7 +367,7 @@ const HomePage = () => {
           }));
         }
         setShowScanButton(true);
-      } else if (navState.url === "https://m.my-rent.net/#rents/guests") {
+      } else if (nav_url[0] === "https://m.my-rent.net/#rents/guests") {
         setUserData((existingValues) => ({
           ...existingValues,
         }));
@@ -375,22 +386,10 @@ const HomePage = () => {
 
   // REFRESH TO SEE ADDED USER
   function openGuestList() {
-    const redirectTo =
-      'window.location="/#rents/messages"; window.location = "/#rents/guests"';
+    const extractRentId = currentUrl.split("?")[1].split("=")[1];
+    const redirectTo = `window.location="/#rents/messages?rent_id=${extractRentId}"; window.location = "/#rents/guests?rent_id=${extractRentId}"`;
     WEBVIEW.current.injectJavaScript(redirectTo);
   }
-
-  // // for testing
-  // useEffect(() => {
-  //   SecureStore.deleteItemAsync("user_guid")
-  //     .then(() => {
-  //       SecureStore.deleteItemAsync("guid");
-  //     })
-  //     .then(async () => {
-  //       SecureStore.deleteItemAsync("worker_id");
-  //       await new Promise((res) => setTimeout(res, 700));
-  //     });
-  // });
 
   //HANDLE GO BACK BUTTON
   useEffect(() => {

@@ -1,7 +1,5 @@
 import { View, Text, Pressable, StyleSheet, TextInput } from "react-native";
 import React, { useContext, useEffect, useState } from "react";
-//COLORS
-import { ColorPrimaryGradientOne } from "../Static/static";
 //AXIOS
 import axios from "axios";
 //CONTEXT
@@ -15,11 +13,10 @@ import { REGULA_API } from "@env";
 
 const ShowScannedData = ({
   setShowScanInfo,
-  onScanButtonPress,
   openGuestList,
   onCancelButtonPress,
 }) => {
-  const { userData, setUserData } = useContext(UserContext);
+  const { userData } = useContext(UserContext);
   const [userDataCopy, setUserDataCopy] = useState({});
 
   useEffect(() => {
@@ -27,7 +24,7 @@ const ShowScannedData = ({
   }, []);
 
   const {
-    rentId,
+    rentId, 
     name,
     surname,
     documentType,
@@ -37,7 +34,6 @@ const ShowScannedData = ({
     citizenship,
     birthDate,
     residenceCity,
-    exprirationDate,
     originalData,
     workerId,
   } = userDataCopy;
@@ -47,13 +43,20 @@ const ShowScannedData = ({
   const [isFormValid, setIsFormValid] = useState(true);
 
   const onSaveFormButtonClick = () => {
-    console.log(userDataCopy);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (residenceCity === "" && citizenship === "Croatia") {
-      console.log("nije");
+    if (
+      name === "" ||
+      surname === "" ||
+      gender === "" ||
+      country === "" ||
+      documentId === "" ||
+      citizenship === "" ||
+      residenceCity === ""
+    ) {
       setIsFormValid(false);
     } else {
-      console.log("proslo");
+      console.log("country: " + country);
+      console.log("residenve city" + citizenship)
       axios
         .post(`${REGULA_API.toString()}`, {
           rent_id: rentId,
@@ -173,19 +176,15 @@ const ShowScannedData = ({
         />
       </View>
 
-      {citizenship?.toLowerCase() === "croatia" ? (
-        <View style={styles.inputAndLabelContainer}>
-          <Text style={{ width: 110 }}>City: </Text>
-          <TextInput
-            value={residenceCity}
-            onChangeText={onResidenceCityChange}
-            placeholder="City of residence"
-            style={styles.textInput}
-          />
-        </View>
-      ) : (
-        ""
-      )}
+      <View style={styles.inputAndLabelContainer}>
+        <Text style={{ width: 110 }}>City: </Text>
+        <TextInput
+          value={residenceCity}
+          onChangeText={onResidenceCityChange}
+          placeholder="City of residence"
+          style={styles.textInput}
+        />
+      </View>
 
       <View style={styles.inputAndLabelContainer}>
         <Text style={{ width: 110 }}>Citizenship: </Text>
@@ -205,7 +204,7 @@ const ShowScannedData = ({
             fontSize: 16,
           }}
         >
-          Molimo unesite grad!
+          Molimo unesite sve podatke!
         </Text>
       )}
       <Text style={{ marginVertical: 12, textAlign: "center", color: "red" }}>
@@ -220,16 +219,6 @@ const ShowScannedData = ({
           onPress={onCancelButtonPress}
         >
           <Text style={[styles.loginText, { color: "white" }]}>CANCEL</Text>
-        </Pressable>
-        <Pressable
-          style={[
-            styles.btnLogin,
-            { backgroundColor: ColorPrimaryGradientOne },
-          ]}
-          title="Submit"
-          onPress={onScanButtonPress}
-        >
-          <Text style={[styles.loginText, { color: "white" }]}>TRY AGAIN</Text>
         </Pressable>
         <Pressable
           style={[styles.btnLogin, { backgroundColor: "green" }]}
@@ -266,7 +255,7 @@ const styles = StyleSheet.create({
   buttonsContainer: {
     display: "flex",
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
   },
   loginText: {
     textAlign: "center",
@@ -276,6 +265,7 @@ const styles = StyleSheet.create({
   btnLogin: {
     marginTop: 16,
     paddingVertical: 10,
+    marginHorizontal: 12,
     borderRadius: 4,
     elevation: 8,
     shadowColor: "#171717",

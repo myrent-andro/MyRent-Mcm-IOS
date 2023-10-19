@@ -166,6 +166,7 @@ const LoginPage = () => {
   };
 
   const canUserLogin = async (guid, worker_id, user_guid) => {
+    //add verification
     const push_token = await SecureStore.getItemAsync("push_token");
     if (guid && worker_id && user_guid && push_token) {
       setIsUserLoggedIn(true);
@@ -188,6 +189,8 @@ const LoginPage = () => {
         console.log(res.data);
         setIsCredentialsTrue(true);
         await save("guid", res.data.guid);
+        //check if this is user guid
+        console.log(res.data.guid);
         await save("worker_id", res.data.id);
         //get user guid provided worker id
         const user_guid = await getUserId(res.data.id);

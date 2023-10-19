@@ -15,7 +15,7 @@
 		B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		CA10E60C29AFA72F00629CD5 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = CA10E60B29AFA72E00629CD5 /* GoogleService-Info.plist */; };
-		CA775F442936006B006FC5D4 /* regula.license in Resources */ = {isa = PBXBuildFile; fileRef = CA775F4329360065006FC5D4 /* regula.license */; };
+		CABA36652A1264800057071B /* regula.license in Resources */ = {isa = PBXBuildFile; fileRef = CABA36642A1264800057071B /* regula.license */; };
 		DC9060E1D57447C38A778A45 /* noop-file.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D8614264151442DADCD5C70 /* noop-file.swift */; };
 /* End PBXBuildFile section */
 
@@ -34,7 +34,7 @@
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = myrentmobileapp/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		CA10E60B29AFA72E00629CD5 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "../../Desktop/GoogleService-Info.plist"; sourceTree = "<group>"; };
-		CA775F4329360065006FC5D4 /* regula.license */ = {isa = PBXFileReference; lastKnownFileType = file; path = regula.license; sourceTree = "<group>"; };
+		CABA36642A1264800057071B /* regula.license */ = {isa = PBXFileReference; lastKnownFileType = file; name = regula.license; path = ../../Desktop/regula.license; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-myrentmobileapp/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -86,8 +86,8 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
+				CABA36642A1264800057071B /* regula.license */,
 				CA10E60B29AFA72E00629CD5 /* GoogleService-Info.plist */,
-				CA775F4329360065006FC5D4 /* regula.license */,
 				13B07FAE1A68108700A75B9A /* myrentmobileapp */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
@@ -205,10 +205,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CA775F442936006B006FC5D4 /* regula.license in Resources */,
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				CA10E60C29AFA72F00629CD5 /* GoogleService-Info.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
+				CABA36652A1264800057071B /* regula.license in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -383,7 +383,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = myrentmobileapp/myrentmobileapp.entitlements;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = 69JJLFPXWC;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -394,7 +394,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				IPHONEOS_DEPLOYMENT_TARGET = 12.4;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 9;
+				MARKETING_VERSION = 11;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -421,13 +421,13 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = myrentmobileapp/myrentmobileapp.entitlements;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = 69JJLFPXWC;
 				INFOPLIST_FILE = myrentmobileapp/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				IPHONEOS_DEPLOYMENT_TARGET = 12.4;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 9;
+				MARKETING_VERSION = 11;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
