@@ -2,6 +2,8 @@ import { View, Text, Pressable, StyleSheet, TextInput } from "react-native";
 import React, { useContext, useEffect, useState } from "react";
 //AXIOS
 import axios from "axios";
+//EXPO SECURE STORE
+import * as SecureStore from "expo-secure-store";
 //CONTEXT
 import { UserContext } from "../context/ScannedContext";
 
@@ -15,6 +17,8 @@ const ShowScannedData = ({
   setShowScanInfo,
   openGuestList,
   onCancelButtonPress,
+  isOwnerApp = false,
+  setShowScanButton = { setShowScanButton },
 }) => {
   const { userData } = useContext(UserContext);
   const [userDataCopy, setUserDataCopy] = useState({});
@@ -24,7 +28,7 @@ const ShowScannedData = ({
   }, []);
 
   const {
-    rentId, 
+    rentId,
     name,
     surname,
     documentType,
@@ -42,47 +46,91 @@ const ShowScannedData = ({
 
   const [isFormValid, setIsFormValid] = useState(true);
 
-  const onSaveFormButtonClick = () => {
+  const onSaveFormButtonClick = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (
-      name === "" ||
-      surname === "" ||
-      gender === "" ||
-      country === "" ||
-      documentId === "" ||
-      citizenship === "" ||
-      residenceCity === ""
-    ) {
-      setIsFormValid(false);
-    } else {
-      console.log("country: " + country);
-      console.log("residenve city" + citizenship)
-      axios
-        .post(`${REGULA_API.toString()}`, {
-          rent_id: rentId,
-          name_first: name,
-          name_last: surname,
-          document_type: documentType,
-          document_number: documentId,
-          gender: gender,
-          residence_country: country,
-          residence_adress: "",
-          residence_city: residenceCity,
-          birth_country: "",
-          citizenship: country,
-          birth_city: "",
-          arrival_organisation: "",
-          offered_service_type: "",
-          birth_date: birthDate,
-          tt_payment_category: "",
-          original_data: JSON.stringify(originalData),
-          worker_id: workerId,
-        })
-        .then((res) => {
-          setShowScanInfo(false);
-          setUserDataCopy({});
-          openGuestList();
-        });
+    if (isOwnerApp === false) {
+      if (
+        name === "" ||
+        surname === "" ||
+        gender === "" ||
+        country === "" ||
+        documentId === "" ||
+        citizenship === "" ||
+        residenceCity === ""
+      ) {
+        setIsFormValid(false);
+      } else {
+        axios
+          .post(`${REGULA_API.toString()}`, {
+            rent_id: rentId,
+            name_first: name,
+            name_last: surname,
+            document_type: documentType,
+            document_number: documentId,
+            gender: gender,
+            residence_country: country,
+            residence_adress: "",
+            residence_city: residenceCity,
+            birth_country: "",
+            citizenship: country,
+            birth_city: "",
+            arrival_organisation: "",
+            offered_service_type: "",
+            birth_date: birthDate,
+            tt_payment_category: "",
+            original_data: JSON.stringify(originalData),
+            worker_id: workerId,
+          })
+          .then((res) => {
+            setShowScanInfo(false);
+            setUserDataCopy({});
+            openGuestList();
+          });
+      }
+    }
+    //if scanning is from owner app add owner id to json
+    else if (isOwnerApp === true) {
+      const owner_id = await SecureStore.getItemAsync("owner_id");
+      if (
+        name === "" ||
+        surname === "" ||
+        gender === "" ||
+        country === "" ||
+        documentId === "" ||
+        citizenship === "" ||
+        residenceCity === ""
+      ) {
+        setIsFormValid(false);
+      } else {
+        axios
+          .post(`${REGULA_API.toString()}`, {
+            rent_id: rentId,
+            name_first: name,
+            name_last: surname,
+            document_type: documentType,
+            document_number: documentId,
+            gender: gender,
+            residence_country: country,
+            residence_adress: "",
+            residence_city: residenceCity,
+            birth_country: "",
+            citizenship: country,
+            birth_city: "",
+            arrival_organisation: "",
+            offered_service_type: "",
+            birth_date: birthDate,
+            tt_payment_category: "",
+            original_data: JSON.stringify(originalData),
+            worker_id: workerId,
+            owner_id: owner_id,
+          })
+          .then((res) => {
+            setShowScanInfo(false);
+            setShowScanButton(true);
+            setUserDataCopy({});
+            openGuestList();
+          });
+      }
     }
   };
 

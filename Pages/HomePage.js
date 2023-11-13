@@ -91,12 +91,11 @@ const HomePage = () => {
 
   //USER CONTEXT
   const { userData, setUserData } = useContext(UserContext);
-  const { setIsUserLoggedIn, isUserLoggedIn } = useContext(LoggedContext);
+  const { setIsUserLoggedIn, redirectPush, setRedirectPush } =
+    useContext(LoggedContext);
 
   const [isScanningAllowed, setIsScanningAllowed] = useState(true);
 
-  //NAVIGATION
-  const navigation = useNavigation();
   //DECLARATIONS
   const [urlState, setUrlState] = useState("");
   const [backButtonEnabled, setBackButtonEnabled] = useState(false);
@@ -104,44 +103,17 @@ const HomePage = () => {
   const [isDatabseConnected, setIsDatabseConnected] = useState(false);
   const [currentUrl, setCurrentUrl] = useState("");
 
+  const [isPushExecuted, setIsPushExecuted] = useState(false);
+
   //SHOW FULL PAGE MODAL AFTER REGULA SCAN
   const [showScanInfo, setShowScanInfo] = useState(false);
 
-  const WEBVIEW = useRef();
+  const WEBVIEW = useRef(null);
 
-  useEffect(() => {
-    const scanning_avaliable = async () => {
-      const worker_id = await SecureStore.getItemAsync("worker_id");
-      const worker_id_quoteless = worker_id.replace(`"`, ``).replace(`"`, ``);
-      //get user guid from local storage
-      const user_guid = await SecureStore.getItemAsync("user_guid");
-
-      await fetch(
-        `https://api.my-rent.net/mcm/check_for_scaning?worker_id=${worker_id_quoteless}`,
-        {
-          headers: {
-            user_guid: user_guid.replace(`"`, ``).replace(`"`, ``),
-          },
-        }
-      )
-        .then((response) => response.text())
-        .then((data) => {
-          var mobile = data.slice(19, 20);
-          if (mobile === "Y") {
-            setIsScanningAllowed(true);
-          } else {
-            setIsScanningAllowed(false);
-          }
-        })
-        .catch((err) => console.log(err));
-    };
-
-    scanning_avaliable();
-  }, []);
-
-  //INITIALIZE REGULA
-  useEffect(() => {
-    //LISTENER
+  async function prepareRegula() {
+    if (isPushExecuted) {
+      return;
+    }
     eventManager.addListener("completionEvent", (e) =>
       handleCompletion(DocumentReaderCompletion.fromJson(JSON.parse(e["msg"])))
     );
@@ -170,6 +142,41 @@ const HomePage = () => {
         ]);
       }
     );
+  }
+
+  // useEffect(() => {
+  //   const scanning_avaliable = async () => {
+  //     const worker_id = await SecureStore.getItemAsync("worker_id");
+  //     const worker_id_quoteless = worker_id.replace(`"`, ``).replace(`"`, ``);
+  //     //get user guid from local storage
+  //     const user_guid = await SecureStore.getItemAsync("user_guid");
+
+  //     await fetch(
+  //       `https://api.my-rent.net/mcm/check_for_scaning?worker_id=${worker_id_quoteless}`,
+  //       {
+  //         headers: {
+  //           user_guid: user_guid.replace(`"`, ``).replace(`"`, ``),
+  //         },
+  //       }
+  //     )
+  //       .then((response) => response.text())
+  //       .then((data) => {
+  //         var mobile = data.slice(19, 20);
+  //         if (mobile === "Y") {
+  //           setIsScanningAllowed(true);
+  //         } else {
+  //           setIsScanningAllowed(false);
+  //         }
+  //       })
+  //       .catch((err) => console.log(err));
+  //   };
+
+  //   scanning_avaliable();
+  // }, []);
+
+  //INITIALIZE REGULA
+  useEffect(() => {
+    prepareRegula();
   }, []);
 
   //HANDLE COMPLETION
@@ -275,25 +282,29 @@ const HomePage = () => {
     }, [])
   );
 
+  async function getGuidFromExpoSecureStore() {
+    if (isPushExecuted) {
+      return;
+    }
+    try {
+      const guid = await SecureStore.getItemAsync("guid");
+      const worker_id = await SecureStore.getItemAsync("worker_id");
+      //GENERATING URL
+      setUrlState(
+        `https://m.my-rent.net/?id=${guid.replace(`"`, ``).replace(`"`, ``)}`
+      );
+      //ADDING WORKER_ID TO USER CONTEXT
+      setUserData((existingValues) => ({
+        ...existingValues,
+        workerId: worker_id.replace(`"`, ``).replace(`"`, ``),
+      }));
+    } catch (error) {
+      console.log("Getting guid and worker id from expo store error");
+    }
+  }
+
   //GETTING GUID AND WORKER_ID FROM EXPO SECURE STORE
   useEffect(() => {
-    async function getGuidFromExpoSecureStore() {
-      try {
-        const guid = await SecureStore.getItemAsync("guid");
-        const worker_id = await SecureStore.getItemAsync("worker_id");
-        //GENERATING URL
-        setUrlState(
-          `https://m.my-rent.net/?id=${guid.replace(`"`, ``).replace(`"`, ``)}`
-        );
-        //ADDING WORKER_ID TO USER CONTEXT
-        setUserData((existingValues) => ({
-          ...existingValues,
-          workerId: worker_id.replace(`"`, ``).replace(`"`, ``),
-        }));
-      } catch (error) {
-        console.log("Getting guid and worker id from expo store error");
-      }
-    }
     getGuidFromExpoSecureStore();
   }, []);
 
@@ -314,7 +325,6 @@ const HomePage = () => {
     });
   };
 
-  //delete data from storage helper function to delete data
   const deleteDataFromStorage = async () => {
     SecureStore.deleteItemAsync("user_guid")
       .then(() => {
@@ -327,11 +337,125 @@ const HomePage = () => {
       });
   };
 
+  //Initialize push notifications
+  useEffect(() => {
+    if (requestUserPermission()) {
+      // return fcm token for the device
+      messaging()
+        .getToken()
+        .then(async (token) => {
+          // console.log(token);
+        });
+    } else {
+      console.log("Failed token status", authStatus);
+    }
+
+    //check whether an initail app is running
+    messaging()
+      .getInitialNotification()
+      .then(async (remoteMessage) => {
+        setIsPushExecuted(true);
+        handleNotification(remoteMessage);
+      });
+
+    //asume a message-notification contains a type property in data payload of the screen to open
+    messaging().onNotificationOpenedApp(async (remoteMessage) => {
+      setIsPushExecuted(true);
+      handleNotification(remoteMessage);
+    });
+
+    //background handler
+    messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+      setIsPushExecuted(true);
+      handleNotification(remoteMessage);
+    });
+
+    const unsubscribe = messaging().onMessage(async (remoteMessage) => {
+      setIsPushExecuted(true);
+      handleNotification(remoteMessage, true);
+    });
+
+    return unsubscribe;
+  }, [isDatabseConnected, urlState, WEBVIEW.current]);
+
+  async function requestUserPermission() {
+    const authStatus = await messaging().requestPermission();
+    const enabled =
+      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+    if (enabled) {
+      // console.log("Authorization status:", authStatus);
+    }
+  }
+
+  //handle push notification if user is in app or out of the app
+  const handleNotification = async (remoteMessage, is_user_in_app = false) => {
+    const app = await SecureStore.getItemAsync("app");
+    if (remoteMessage && is_user_in_app === true) {
+      if (app.replace('"', "").replace('"', "") === "worker") {
+        Alert.alert(
+          remoteMessage.notification.title,
+          remoteMessage.notification.body,
+          [
+            {
+              text: "Cancel",
+              onPress: () => null,
+              style: "cancel",
+            },
+            {
+              text: "Go",
+              onPress: () =>
+                reddirectToScreen(
+                  "https://m.my-rent.net/#rents/messages?rent_id=" +
+                    remoteMessage.data.rent_id,
+                  "https://m.my-rent.net/#edit?rent_id=" +
+                    remoteMessage.data.rent_id
+                ),
+            },
+          ]
+        );
+      }
+    }
+    //WHEN USER IS NOT IN APP
+    else if (remoteMessage && is_user_in_app === false) {
+      if (app.replace('"', "").replace('"', "") === "worker") {
+        prepareRegula();
+        getGuidFromExpoSecureStore();
+        console.log(urlState);
+        console.log(isDatabseConnected);
+        if (!isDatabseConnected || (urlState === "" && !WEBVIEW.current)) {
+          return;
+        }
+        //check which type of notifications is it
+        if (remoteMessage.data.type === "message") {
+          reddirectToScreen(
+            "https://m.my-rent.net/#rents/messages?rent_id=" +
+              remoteMessage.data.rent_id,
+            "https://m.my-rent.net/#edit?rent_id=" + remoteMessage.data.rent_id
+          );
+        } else if (
+          remoteMessage.data.type === "rent_change" ||
+          remoteMessage.data.type === "rent_add"
+        ) {
+          reddirectToScreen(
+            "https://m.my-rent.net/#rents/messages?rent_id=" +
+              remoteMessage.data.rent_id,
+            "https://m.my-rent.net/#edit?rent_id=" + remoteMessage.data.rent_id
+          );
+        }
+      }
+    }
+  };
+
+  const reddirectToScreen = (first_url, second_url) => {
+    const redirectTo = `window.location="${first_url}"; window.location = "${second_url}"`;
+    WEBVIEW.current.injectJavaScript(redirectTo);
+  };
   //DELETING GUID ON LOGOUT
   async function deleteGuid() {
     const worker_id = await SecureStore.getItemAsync("worker_id");
     const token = await SecureStore.getItemAsync("push_token");
-    // const user_guid = await SecureStore.getItemAsync("user_guid");
     const worker_id_quoteless = worker_id.replace(`"`, ``).replace(`"`, ``);
     const token_quoteless = token.replace(`"`, ``).replace(`"`, ``);
     // const user_guid_qless = user_guid.replace(`"`, `"`).replace(`"`, ``);

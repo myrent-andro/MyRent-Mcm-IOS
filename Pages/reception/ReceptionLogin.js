@@ -14,9 +14,10 @@ import {
   Platform,
 } from "react-native";
 
-//firebise cloud messaging
-import messaging from "@react-native-firebase/messaging";
-
+//nav
+import { useNavigation } from "@react-navigation/native";
+//context
+import { LoggedContext } from "../../context/LoggedContext";
 //EXPO
 import Constants from "expo-constants";
 //EXPO SECURE STORE
@@ -27,34 +28,20 @@ import { Ionicons } from "@expo/vector-icons";
 //EXPO HAPTICS
 import * as Haptics from "expo-haptics";
 
-//NAVIGATION
-import { useNavigation } from "@react-navigation/native";
-
-//STATIC VARIABLES
-import { ColorPrimaryGradientOne, TextSecondGray } from "../Static/static";
+import { ColorPrimaryGradientOne, TextSecondGray } from "../../Static/static";
 
 //AXIOS
 import axios from "axios";
 
-//ENV
-import { API_LOGIN_URL } from "@env";
-
-//context
-import { LoggedContext } from "../context/LoggedContext";
-
-const LoginPage = () => {
-  //DECLARATIONS
-  //DECLARING NAVIGATION
+const ReceptionLogin = () => {
   const navigation = useNavigation();
   const { setIsUserLoggedIn } = useContext(LoggedContext);
 
   //FOR TEXT INPUTS
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-
   //CHANGE SHOW HIDE PASSWORD ICON
   const [passwordVisibility, setPasswordVisibility] = useState(true);
-
   //ARE LOGIN CREDENTIALS TRUE
   const [isCredentialsTrue, setIsCredentialsTrue] = useState(true);
 
@@ -71,6 +58,31 @@ const LoginPage = () => {
     }
   };
 
+  const handleSubmit = async () => {
+    axios
+      .get(
+        `https://api.my-rent.net/mcm/login_as_recepcionist?u=${username}&p=${password}`
+      )
+      .then((res) => {
+        setIsCredentialsTrue(true);
+        const response_guid = res.data;
+        if (
+            response_guid !==
+          "Invalid login. Please contact our support at support@my-rents.com"
+        ) {
+          save("rec_guid", response_guid);
+          save("app", "rec");
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Success);
+          setIsUserLoggedIn(true);
+        }
+      })
+      .catch((err) => {
+        resetFields();
+        setIsCredentialsTrue(false);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Error);
+      });
+  };
+
   //SAVE GUID AND WORKER_ID AND USRE_ID IN EXPO SECURE STORE
   async function save(key, value) {
     try {
@@ -82,138 +94,9 @@ const LoginPage = () => {
     }
   }
 
-  async function requestUserPermission() {
-    const authStatus = await messaging().requestPermission();
-    const enabled =
-      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-  }
-
-  const getUserId = async (worker_id) => {
-    const worker_id_quteless = worker_id.replace(`"`, ``);
-    return await fetch(
-      `https://api.my-rent.net/workers/get_user_id?id=${worker_id_quteless}`
-    )
-      .then((response) => response.json())
-      .then(async (data) => {
-        console.log(data);
-        return await getUserGuid(data);
-      })
-      .catch((err) => console.log(err));
-  };
-
-  const getUserGuid = async (user_id) => {
-    console.log("USER_ID:" + user_id);
-    const user_id_qless = user_id.replace(`"`, ``).replace(`"`, ``);
-    return await fetch(`https://api.my-rent.net/users/guid/${user_id_qless}`)
-      .then((response) => response.text())
-      .then((data) => {
-        return data;
-      })
-      .catch((err) => console.log(err));
-  };
-
-  //on login set login param to true
-  const set_login_param_true = async (worker_id, token, user_guid) => {
-    const is_logged_in = "Y";
-    await fetch(
-      `https://api.my-rent.net/mcm/update_login_state?worker_id=${worker_id}&key=${token}&is_logged_in=${is_logged_in}`,
-      {
-        headers: {
-          user_guid: user_guid.replace(`"`, ``).replace(`"`, ``),
-        },
-      }
-    )
-      .then(() => console.log("SAMO UPDEJTAM STATE"))
-      .catch((err) => console.log(err));
-  };
-
-  //add new device with key to that worker if device for that worker is not registred
-  const add_new_key_to_db = async (worker_id, token, user_guid) => {
-    await fetch(
-      `https://api.my-rent.net/mcm/add_new_key_to_db?worker_id=${worker_id}&key=${token}`,
-      {
-        headers: {
-          user_guid: user_guid.replace(`"`, ``).replace(`"`, ``),
-        },
-      }
-    ).then(() => console.log("DODAN NOVI DEVICE"));
-  };
-
-  const checkIfWorkerExsist = async (worker_id, token, user_guid) => {
-    //worker id (eliminate qutes)
-    const worker_id_quteless = worker_id.replace(`"`, ``).replace(`"`, ``);
-
-    const response = await fetch(
-      `https://api.my-rent.net/mcm/check_if_device_is_new_for_specific_worker?key=${token}&worker_id=${worker_id_quteless}`,
-      {
-        headers: {
-          user_guid: user_guid.replace(`"`, ``).replace(`"`, ``),
-        },
-      }
-    )
-      .then((response) => {
-        return response.json();
-      })
-      .then(async (data) => {
-        if (data[0].is_push_id === "N") {
-          await add_new_key_to_db(worker_id_quteless, token, user_guid);
-        } else {
-          await set_login_param_true(worker_id_quteless, token, user_guid);
-        }
-      })
-      .catch((err) => console.log(err));
-  };
-
-  const canUserLogin = async (guid, worker_id, user_guid) => {
-    //add verification
-    const push_token = await SecureStore.getItemAsync("push_token");
-    if (guid && worker_id && user_guid && push_token) {
-      setIsUserLoggedIn(true);
-    } else {
-      setUsername("");
-      setPassword("");
-      setIsCredentialsTrue(false);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Error);
-    }
-  };
-
-  //ON LOGIN BUTTON CLICK
-  const handleSubmit = () => {
-    axios
-      .post(`${API_LOGIN_URL}`, {
-        username: username,
-        password: password,
-      })
-      .then(async (res) => {
-        console.log(res.data);
-        setIsCredentialsTrue(true);
-        await save("guid", res.data.guid);
-        //check if this is user guid
-        console.log(res.data.guid);
-        await save("worker_id", res.data.id);
-        //get user guid provided worker id
-        const user_guid = await getUserId(res.data.id);
-        await save("user_guid", user_guid);
-        await save ("app", "worker");
-        if (requestUserPermission()) {
-          messaging()
-            .getToken()
-            .then(async (token) => {
-              save("push_token", token);
-              await checkIfWorkerExsist(res.data.id, token, user_guid);
-            });
-        }
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Success);
-        canUserLogin(user_guid, res.data.guid, res.data.id);
-      })
-      .catch((err) => {
-        console.log(err);
-        setUsername("");
-        setPassword("");
-        setIsCredentialsTrue(false);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Error);
-      });
+  const resetFields = () => {
+    setUsername("");
+    setPassword("");
   };
 
   return (
@@ -242,10 +125,12 @@ const LoginPage = () => {
                 >
                   <Ionicons name="arrow-back" size={28} color="white" />
                 </Pressable>
-                <Text style={styles.upperNavigationText}>Login as Worker</Text>
+                <Text style={styles.upperNavigationText}>
+                  Login as Receptionist
+                </Text>
               </View>
               <View style={styles.cardContainer}>
-                <Text style={styles.cardTitle}>Login as Worker</Text>
+                <Text style={styles.cardTitle}>Login as Receptionist</Text>
                 <View
                   style={[
                     styles.inputContainer,
@@ -335,7 +220,7 @@ const LoginPage = () => {
                   title="Submit"
                   onPress={handleSubmit}
                 >
-                  <Text style={styles.loginText}>Sign in</Text>
+                  <Text style={styles.loginText}>Login as Receptionist</Text>
                 </Pressable>
               </View>
             </View>
@@ -428,23 +313,26 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   btnLogin: {
-    backgroundColor: ColorPrimaryGradientOne,
-    paddingVertical: 12,
-    paddingHorizontal: 48,
-    borderRadius: 4,
+    borderColor: ColorPrimaryGradientOne,
+    backgroundColor: "white",
     elevation: 8,
+    borderWidth: 2,
+    borderStyle: "solid",
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 4,
     width: "100%",
     shadowColor: "#171717",
     shadowOffset: { width: -2, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
-    marginBottom: 24,
   },
   loginText: {
     textAlign: "center",
     fontFamily: "Poppins_700Bold",
     fontSize: 16,
-    color: "white",
+    color: ColorPrimaryGradientOne,
   },
   signUpText: {
     color: TextSecondGray,
@@ -479,4 +367,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginPage;
+export default ReceptionLogin;

@@ -55,9 +55,6 @@ const OnBoardPage = () => {
 
   //DECLARATIONS
   const [isExitModalShown, setIsExitModalShown] = useState(false);
-  const [isPushEnabled, setIsPushEnabled] = useState(false);
-
-  const toggleSwitch = () => setIsPushEnabled((previousState) => !previousState);
 
   //NAV DECLARATION
   const navigation = useNavigation();
@@ -67,6 +64,18 @@ const OnBoardPage = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     navigation.navigate("LoginPage");
   };
+
+  //HANDLE OWNER LOGIN BUTTON PRESS
+  const ownerLoginButtonPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.navigate("OwnerLogin");
+  };
+
+  const receptionistButtonPress = () =>{
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.navigate("ReceptionLogin");
+  }
+
   //HANDLE EXIT APP
   useFocusEffect(
     React.useCallback(() => {
@@ -109,7 +118,6 @@ const OnBoardPage = () => {
               <Text style={styles.header}>Welcome to myRent</Text>
               <Text style={styles.subHeader}>Channel Manager & PMS system</Text>
               <View style={styles.cardContainer}>
-                <Text style={styles.cardTitle}>Let's go</Text>
                 <Pressable
                   style={({ pressed }) => [
                     { opacity: pressed ? 0.8 : 1 },
@@ -118,10 +126,30 @@ const OnBoardPage = () => {
                   title="Submit"
                   onPress={loginButtonPress}
                 >
-                  <Text style={styles.loginText}>LOG IN</Text>
+                  <Text style={styles.loginText}>Login as Worker</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [
+                    { opacity: pressed ? 0.8 : 1 },
+                    styles.btnLoginOwner,
+                  ]}
+                  title="Sign In"
+                  onPress={ownerLoginButtonPress}
+                >
+                  <Text style={styles.loginTextOwner}>Login as Owner</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [
+                    { opacity: pressed ? 0.8 : 1 },
+                    styles.btnLoginOwner,
+                  ]}
+                  title="Sign In"
+                  onPress={receptionistButtonPress}
+                >
+                  <Text style={styles.loginTextOwner}>Login as Receptionist</Text>
                 </Pressable>
               </View>
-              <View
+              {/* <View
                 style={[
                   styles.cardContainer,
                   {
@@ -132,8 +160,8 @@ const OnBoardPage = () => {
                     paddingVertical: 0,
                   },
                 ]}
-              >
-                <View style={styles.cardInnerContainer}>
+              > */}
+                {/* <View style={styles.cardInnerContainer}>
                   <Text style={styles.secondCardTitle}>
                     Stay Awhile and Listen
                   </Text>
@@ -142,8 +170,8 @@ const OnBoardPage = () => {
                     you!
                   </Text>
                   <Text style={styles.secondCardAuthor}>Lorii Myers</Text>
-                </View>
-              </View>
+                </View> */}
+              {/* </View> */}
               <View style={styles.bottomTextContainer}>
                 <Text style={styles.bottomText}>
                   Thank you for working with myRent Powered by: MyRent Channel
@@ -345,6 +373,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     fontFamily: "Poppins_500Medium",
+  },
+  btnLoginOwner: {
+    borderColor: ColorPrimaryGradientOne,
+    backgroundColor: "white",
+    elevation: 8,
+    borderWidth: 2,
+    borderStyle: "solid",
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 48,
+    borderRadius: 4,
+    width: "100%",
+    shadowColor: "#171717",
+    shadowOffset: { width: -2, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  loginTextOwner: {
+    textAlign: "center",
+    fontFamily: "Poppins_700Bold",
+    fontSize: 16,
+    color: ColorPrimaryGradientOne,
   },
 });
 
