@@ -18,6 +18,7 @@ const ShowScannedData = ({
   openGuestList,
   onCancelButtonPress,
   isOwnerApp = false,
+  isReceptionApp = false,
   setShowScanButton = { setShowScanButton },
 }) => {
   const { userData } = useContext(UserContext);
@@ -48,7 +49,7 @@ const ShowScannedData = ({
 
   const onSaveFormButtonClick = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (isOwnerApp === false) {
+    if (isOwnerApp === false && isReceptionApp) {
       if (
         name === "" ||
         surname === "" ||
@@ -89,7 +90,7 @@ const ShowScannedData = ({
       }
     }
     //if scanning is from owner app add owner id to json
-    else if (isOwnerApp === true) {
+    else if (isOwnerApp === true && isReceptionApp === false) {
       const owner_id = await SecureStore.getItemAsync("owner_id");
       if (
         name === "" ||
@@ -131,6 +132,9 @@ const ShowScannedData = ({
             openGuestList();
           });
       }
+    }
+    else if(isReceptionApp === true && isOwnerApp === false){
+      //send reception_id with request
     }
   };
 
