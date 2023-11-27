@@ -233,15 +233,12 @@ const ReceptionHome = () => {
   const onNavigationStateChange = (navState) => {
     var current_url = navState.url;
     setUrlState(current_url);
-    var s_array = current_url.split('/');
-    var s_array2 = s_array[3]?.split("?");
-    console.log(s_array2);
-    if (
-      s_array2[0] === "rent_details"
-    ) {
 
+    console.log(current_url);
+    console.log(current_url.split("/")[3].split("?")[0]);
+    if (current_url.split("/")[3].split("?")[0] === "rent_details") {
       //extract rent_id from url
-      var rent_id = s_array2[1]?.split("=")[1];
+      var rent_id = current_url.split("/")[3].split("?")[1].split("=")[1];
 
       setUserData((existingValues) => ({
         ...existingValues,

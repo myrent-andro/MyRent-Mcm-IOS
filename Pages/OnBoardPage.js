@@ -138,7 +138,7 @@ const OnBoardPage = () => {
                 >
                   <Text style={styles.loginTextOwner}>Login as Owner</Text>
                 </Pressable>
-                <Pressable
+                {/* <Pressable
                   style={({ pressed }) => [
                     { opacity: pressed ? 0.8 : 1 },
                     styles.btnLoginOwner,
@@ -147,7 +147,7 @@ const OnBoardPage = () => {
                   onPress={receptionistButtonPress}
                 >
                   <Text style={styles.loginTextOwner}>Login as Receptionist</Text>
-                </Pressable>
+                </Pressable> */}
               </View>
               {/* <View
                 style={[

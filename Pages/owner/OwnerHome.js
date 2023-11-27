@@ -237,6 +237,7 @@ const OwnerHome = () => {
   const onNavigationStateChange = (navState) => {
     var current_url = navState.url;
     setUrlState(current_url);
+    console.log(current_url);
     if (
       current_url.split("/")[3] === "scan" &&
       current_url.split("/")[4] === "scan"
