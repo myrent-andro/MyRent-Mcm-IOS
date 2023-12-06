@@ -126,7 +126,7 @@ const OnBoardPage = () => {
                   title="Submit"
                   onPress={loginButtonPress}
                 >
-                  <Text style={styles.loginText}>Login as Worker</Text>
+                  <Text style={styles.loginText}>Login to MyRent</Text>
                 </Pressable>
                 <Pressable
                   style={({ pressed }) => [
@@ -136,7 +136,7 @@ const OnBoardPage = () => {
                   title="Sign In"
                   onPress={ownerLoginButtonPress}
                 >
-                  <Text style={styles.loginTextOwner}>Login as Owner</Text>
+                  <Text style={styles.loginTextOwner}>Login to Owner Portal</Text>
                 </Pressable>
                 {/* <Pressable
                   style={({ pressed }) => [
